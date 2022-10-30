@@ -123,8 +123,8 @@ async function getMenuItem(installations) {
     }
 
     const resourceDir = path.join(customPath, "resources");
-    if (!fs.existsSync(path.join(resourceDir, "discord.asar"))) {
-      console.log("Unsupported Install. resources/discord.asar not found");
+    if (!fs.existsSync(path.join(resourceDir, "app.asar"))) {
+      console.log("Unsupported Install. resources/app.asar not found");
       process.exit();
     }
 
@@ -175,7 +175,7 @@ function getWindowsDirs() {
 
     for (const fqAppDir of appDirs) {
       const resourceDir = path.join(fqAppDir, "resources");
-      if (!fs.existsSync(path.join(resourceDir, "discord.asar"))) {
+      if (!fs.existsSync(path.join(resourceDir, "app.asar"))) {
         continue;
       }
       const appDir = path.join(resourceDir, "app");
@@ -221,7 +221,7 @@ function getDarwinDirs() {
     let patched = false;
 
     for (const resourceDir of appDirs) {
-      if (!fs.existsSync(path.join(resourceDir, "discord.asar"))) {
+      if (!fs.existsSync(path.join(resourceDir, "app.asar"))) {
         continue;
       }
       const appDir = path.join(resourceDir, "app");
@@ -296,7 +296,7 @@ function getLinuxDirs() {
       let patched = false;
 
       for (const resourceDir of appDirs) {
-        if (!fs.existsSync(path.join(resourceDir, "discord.asar"))) {
+        if (!fs.existsSync(path.join(resourceDir, "app.asar"))) {
           continue;
         }
         const appDir = path.join(resourceDir, "app");
