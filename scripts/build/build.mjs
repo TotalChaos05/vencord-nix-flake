@@ -44,21 +44,24 @@ const nodeCommonOpts = {
     define: defines,
 };
 
+const sourceMapFooter = s => watch ? "" : `//# sourceMappingURL=vencord://${s}.js.map`;
+const sourcemap = watch ? "inline" : "external";
+
 await Promise.all([
     esbuild.build({
         ...nodeCommonOpts,
         entryPoints: ["src/preload.ts"],
         outfile: "dist/preload.js",
-        footer: { js: "//# sourceURL=VencordPreload\n//# sourceMappingURL=vencord://preload.js.map" },
-        sourcemap: "external",
+        footer: { js: "//# sourceURL=VencordPreload\n" + sourceMapFooter("preload") },
+        sourcemap,
     }),
     esbuild.build({
         ...nodeCommonOpts,
         entryPoints: ["src/patcher.ts"],
         external: ["electron"],
         outfile: "dist/patcher.js",
-        footer: { js: "//# sourceURL=VencordPatcher\n//# sourceMappingURL=vencord://patcher.js.map" },
-        sourcemap: "external",
+        footer: { js: "//# sourceURL=VencordPatcher\n" + sourceMapFooter("patcher") },
+        sourcemap,
     }),
     esbuild.build({
         ...commonOpts,
@@ -66,9 +69,9 @@ await Promise.all([
         outfile: "dist/renderer.js",
         format: "iife",
         target: ["esnext"],
-        footer: { js: "//# sourceURL=VencordRenderer\n//# sourceMappingURL=vencord://renderer.js.map" },
+        footer: { js: "//# sourceURL=VencordRenderer\n" + sourceMapFooter("renderer") },
         globalName: "Vencord",
-        sourcemap: "external",
+        sourcemap,
         plugins: [
             globPlugins,
             ...commonOpts.plugins

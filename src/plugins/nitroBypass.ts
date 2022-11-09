@@ -169,21 +169,18 @@ export default definePlugin({
         const resolution = Settings.plugins.NitroBypass.stickerSize;
 
         const canvas = document.createElement("canvas");
-        canvas.width = width;
-        canvas.height = height;
+        canvas.width = resolution;
+        canvas.height = resolution;
 
         const ctx = canvas.getContext("2d", {
             willReadFrequently: true
         })!;
 
-        const scale = resolution / width;
+        const scale = resolution / Math.max(width, height);
         ctx.scale(scale, scale);
 
         let lastImg: HTMLImageElement | null = null;
         for (const { left, top, width, height, disposeOp, img, delay } of frames) {
-            if (disposeOp === ApngDisposeOp.BACKGROUND) {
-                ctx.clearRect(left, top, width, height);
-            }
             ctx.drawImage(img, left, top, width, height);
 
             const { data } = ctx.getImageData(0, 0, resolution, resolution);
@@ -197,9 +194,12 @@ export default definePlugin({
                 delay,
             });
 
-            if (disposeOp === ApngDisposeOp.PREVIOUS && lastImg) {
+            if (disposeOp === ApngDisposeOp.BACKGROUND) {
+                ctx.clearRect(left, top, width, height);
+            } else if (disposeOp === ApngDisposeOp.PREVIOUS && lastImg) {
                 ctx.drawImage(lastImg, left, top, width, height);
             }
+
             lastImg = img;
         }
 
