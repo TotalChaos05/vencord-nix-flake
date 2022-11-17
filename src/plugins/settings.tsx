@@ -22,83 +22,83 @@ import { Devs } from "../utils/constants";
 import definePlugin from "../utils/types";
 
 export default definePlugin({
-  name: "Settings",
-  description: "Adds Settings UI and debug info",
-  authors: [Devs.Ven, Devs.Megu],
-  required: true,
-  patches: [{
-    find: "().versionHash",
-    replacement: [
-      {
-        match: /\w\.createElement\(.{1,2}.Fragment,.{0,30}\{[^}]+\},"Host ".+?\):null/,
-        replace: m => {
-          const idx = m.indexOf("Host") - 1;
-          const template = m.slice(0, idx);
-          const additionalInfo = IS_WEB
-            ? " (Web)"
-            : IS_STANDALONE
-              ? " (Standalone)"
-              : "";
+    name: "Settings",
+    description: "Adds Settings UI and debug info",
+    authors: [Devs.Ven, Devs.Megu],
+    required: true,
+    patches: [{
+        find: "().versionHash",
+        replacement: [
+            {
+                match: /\w\.createElement\(.{1,2}.Fragment,.{0,30}\{[^}]+\},"Host ".+?\):null/,
+                replace: m => {
+                    const idx = m.indexOf("Host") - 1;
+                    const template = m.slice(0, idx);
+                    const additionalInfo = IS_WEB
+                        ? " (Web)"
+                        : IS_STANDALONE
+                            ? " (Standalone)"
+                            : "";
 
-          let r = `${m}, ${template}"Vencord ", "${gitHash}${additionalInfo}"), " ")`;
-          if (!IS_WEB) {
-            r += `,${template} "Electron ",VencordNative.getVersions().electron)," "),`;
-            r += `${template} "Chrome ",VencordNative.getVersions().chrome)," ")`;
-          }
-          return r;
+                    let r = `${m}, ${template}"Vencord ", "${gitHash}${additionalInfo}"), " ")`;
+                    if (!IS_WEB) {
+                        r += `,${template} "Electron ",VencordNative.getVersions().electron)," "),`;
+                        r += `${template} "Chrome ",VencordNative.getVersions().chrome)," ")`;
+                    }
+                    return r;
+                }
+            }
+        ]
+    }, {
+        find: "Messages.ACTIVITY_SETTINGS",
+        replacement: {
+            match: /\{section:(.{1,2})\.ID\.HEADER,\s*label:(.{1,2})\..{1,2}\.Messages\.ACTIVITY_SETTINGS\}/,
+            replace: (m, mod) => {
+                const updater = !IS_WEB ? '{section:"VencordUpdater",label:"Updater",element:Vencord.Components.Updater},' : "";
+                const patchHelper = IS_DEV ? '{section:"VencordPatchHelper",label:"PatchHelper",element:Vencord.Components.PatchHelper},' : "";
+                return (
+                    `{section:${mod}.ID.HEADER,label:"Vencord"},` +
+                    '{section:"VencordSetting",label:"Vencord",element:Vencord.Components.Settings},' +
+                    '{section:"VencordPlugins",label:"Plugins",element:Vencord.Components.PluginSettings},' +
+                    updater +
+                    patchHelper +
+                    `{section:${mod}.ID.DIVIDER},${m}`
+                );
+            }
         }
-      }
-    ]
-  }, {
-    find: "Messages.ACTIVITY_SETTINGS",
-    replacement: {
-      match: /\{section:(.{1,2})\.ID\.HEADER,\s*label:(.{1,2})\..{1,2}\.Messages\.ACTIVITY_SETTINGS\}/,
-      replace: (m, mod) => {
-        const updater = !IS_WEB ? '{section:"VencordUpdater",label:"Updater",element:Vencord.Components.Updater},' : "";
-        const patchHelper = IS_DEV ? '{section:"VencordPatchHelper",label:"PatchHelper",element:Vencord.Components.PatchHelper},' : "";
+    }],
+
+    get electronVersion() {
+        return VencordNative.getVersions().electron || window.armcord?.electron || null;
+    },
+
+    get chromiumVersion() {
+        try {
+            return VencordNative.getVersions().chrome
+                // @ts-ignore Typescript will add userAgentData IMMEDIATELY
+                || navigator.userAgentData?.brands?.find(b => b.brand === "Chromium" || b.brand === "Google Chrome")?.version
+                || null;
+        } catch { // inb4 some stupid browser throws unsupported error for navigator.userAgentData, it's only in chromium
+            return null;
+        }
+    },
+
+    get additionalInfo() {
+        if (IS_DEV) return " (Dev)";
+        if (IS_WEB) return " (Web)";
+        if (IS_STANDALONE) return " (Standalone)";
+        return "";
+    },
+
+    makeInfoElements(Component: React.ComponentType<React.PropsWithChildren>, props: React.PropsWithChildren) {
+        const { electronVersion, chromiumVersion, additionalInfo } = this;
+
         return (
-          `{section:${mod}.ID.HEADER,label:"Vencord"},` +
-          '{section:"VencordSetting",label:"Vencord",element:Vencord.Components.Settings},' +
-          '{section:"VencordPlugins",label:"Plugins",element:Vencord.Components.PluginSettings},' +
-          updater +
-          patchHelper +
-          `{section:${mod}.ID.DIVIDER},${m}`
+            <>
+                <Component {...props}>Vencord {gitHash}{additionalInfo}</Component>
+                {electronVersion && <Component {...props}>Electron {electronVersion}</Component>}
+                {chromiumVersion && <Component {...props}>Chromium {chromiumVersion}</Component>}
+            </>
         );
-      }
     }
-  }],
-
-  get electronVersion() {
-    return VencordNative.getVersions().electron || window.armcord?.electron || null;
-  },
-
-  get chromiumVersion() {
-    try {
-      return VencordNative.getVersions().chrome
-        // @ts-ignore Typescript will add userAgentData IMMEDIATELY
-        || navigator.userAgentData?.brands?.find(b => b.brand === "Chromium" || b.brand === "Google Chrome")?.version
-        || null;
-    } catch { // inb4 some stupid browser throws unsupported error for navigator.userAgentData, it's only in chromium
-      return null;
-    }
-  },
-
-  get additionalInfo() {
-    if (IS_DEV) return " (Dev)";
-    if (IS_WEB) return " (Web)";
-    if (IS_STANDALONE) return " (Standalone)";
-    return "";
-  },
-
-  makeInfoElements(Component: React.ComponentType<React.PropsWithChildren>, props: React.PropsWithChildren) {
-    const { electronVersion, chromiumVersion, additionalInfo } = this;
-
-    return (
-      <>
-        <Component {...props}>Vencord {gitHash}{additionalInfo}</Component>
-        {electronVersion && <Component {...props}>Electron {electronVersion}</Component>}
-        {chromiumVersion && <Component {...props}>Chromium {chromiumVersion}</Component>}
-      </>
-    );
-  }
 });
